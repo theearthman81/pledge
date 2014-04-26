@@ -123,22 +123,6 @@ describe('PledgeTest', function(){
       expect(spy).toHaveBeenCalledWith(4);
    });
    
-   it('will invoke a pledge and use its "then" method if one is returned from a handler o get its value', function(){ 
-      var spy = jasmine.createSpy();
-      var pledge = new Pledge(function(resolve, reject) {
-         resolve('foo');
-      });
-      var otherPledge = new Pledge(function(resolve, reject) {
-         resolve('bar');
-      });
-      pledge.then(function(value) {
-         return otherPledge;
-      }).then(spy);
-         
-      expect(spy).toHaveBeenCalled();
-      expect(spy).toHaveBeenCalledWith('bar');
-   });
-   
    it('can return correct state via getter', function(){
        var spy = jasmine.createSpy();
        var pledgeResolve = new Pledge(function(resolve, reject) {
