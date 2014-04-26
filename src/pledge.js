@@ -7,6 +7,16 @@
 }(this, function() {   
 
    "use strict";
+     
+   function bindScope(fn, scope) {
+      if (Function.prototype.bind) {
+         return fn.bind(scope);
+      } else {
+         return function() {
+            return fn.apply(scope, arguments);
+         };
+      }
+   }
 
    /**
     * @class Pledge
@@ -16,25 +26,23 @@
     */
    function Pledge(resolver) {
       if(!this || !Pledge.isPledge(this)) {
-        return new Pledge(resolver);
+         return new Pledge(resolver);
       }
-      var boundResolve = (function(pledge) {
-        return function() {
-         return pledge._resolve.apply(pledge, arguments);
-        };
-      }(this)),
-        boundReject = (function(pledge) {
-          return function() {
-            return pledge._reject.apply(pledge, arguments);
-         };
-        }(this));
+      
+      var boundResolve = bindScope(this._resolve, this),
+         boundReject = bindScope(this._resolve, this);
       
       this._state = Pledge.PENDING;
       this._purgeHandlers();
+      
       if (typeof resolver === 'function') {
-        resolver(boundResolve, boundReject);
+        try {
+           resolver(boundResolve, boundReject);
+        } catch (err) {
+           this._reject(err);
+        }
       } else {
-        throw new Error('Pledge constructor takes a function argument.');
+         throw new Error('Pledge constructor takes a function argument.');
       }
    }
 
@@ -61,30 +69,63 @@
    /**
     * TODO.
     *
+    * @param {Pledge} externalPledge
+    */
+   Pledge.prototype._resolveExternalPledge = function(externalPledge) {
+      externalPledge.then(bindScope(this._resolve, this), bindScope(this._reject, this));   
+   };
+   
+   /**
+    * TODO.
+    *
     * @param {Object} value
     */
    Pledge.prototype._resolve = function(value) {
-      this._state = Pledge.RESOLVED;
-      this._result = value;
-      
-      for (var i = 0, l = this._onFulfilled.length; i < l; i++) {
-        this._onFulfilled[i](value);
+      var chainedValue;
+      try {
+         this._state = Pledge.RESOLVED;
+         this._result = value;
+         
+         for (var i = 0, l = this._onFulfilled.length; i < l; i++) {
+            chainedValue = this._onFulfilled[i](value);
+            if(typeof chainedValue !== 'undefined') {
+               this._result = value = chainedValue;
+            }
+            if (Pledge.isPledge(value)) {
+               this._resolveExternalPledge(value);
+               
+               return this._onFulfilled = this._onFulfilled.slice(i);
+            }
+         }
+      } catch (err) {
+         this._reject(err);
       }
+      
       this._purgeHandlers();
    };
-
+   
    /**
     * TODO.
     *
     * @param {Object} value
     */
    Pledge.prototype._reject = function(value) {
+      var chainedValue;
       this._state = Pledge.REJECTED;
       this._result = value;
       
       for (var i = 0, l = this._onRejected.length; i < l; i++) {
-        this._onRejected[i](value);
+         chainedValue = this._onRejected[i](value);
+         if(typeof chainedValue !== 'undefined') {
+            this._result = value = chainedValue;
+         }
+         if (Pledge.isPledge(value)) {
+            this._resolveExternalPledge(value);
+           
+            return this._onRejected = this._onRejected.slice(i);
+         }
       }
+      
       this._purgeHandlers();
    };
 
@@ -106,18 +147,19 @@
     */
    Pledge.prototype.then = function(onFulfilled, onRejected) {
       if (typeof onFulfilled === 'function') {
-        this._onFulfilled.push(onFulfilled);
+         this._onFulfilled.push(onFulfilled);
       }
+      
       if (typeof onRejected === 'function') {
-        this._onRejected.push(onRejected);
+         this._onRejected.push(onRejected);
       }
       
       if (this._state === Pledge.RESOLVED) {
-        this._resolve(this._result);
+         this._resolve(this._result);
       }
       
       if (this._state === Pledge.REJECTED) {
-        this._reject(this._result);
+         this._reject(this._result);
       }
       
       return this;
@@ -131,11 +173,11 @@
     */
    Pledge.prototype.catch = function(onRejected) {
       if (typeof onRejected === 'function') {
-        this.onRejected.push(onRejected);
+         this.onRejected.push(onRejected);
       }
 
       if (this._state === Pledge.REJECTED) {
-        this._reject(this._result);
+         this._reject(this._result);
       }
 
       return this;
@@ -167,7 +209,7 @@
     */
    Pledge.resolve = function(value) {
       return new Pledge(function(resolve, reject) {
-        resolve(value);
+         resolve(value);
       });
    };
 
@@ -179,7 +221,7 @@
     */
    Pledge.reject = function(value) {
       return new Pledge(function(resolve, reject) {
-        reject(value);
+         reject(value);
       });
    };
 
@@ -191,30 +233,34 @@
     */
    Pledge.all = function(pledgeArr) {
       pledgeArr = [].concat(pledgeArr);
+      
       var pledge = new Pledge(function(resolve, reject) {
-        var fulFilledArguments = [];
-        var state = Pledge.PENDING;
-        var pledgeArrClone = pledgeArr.slice();
-        for (var i = 0, l = pledgeArrClone.length; i < l; i++) {
-          if (!Pledge.isPledge(pledgeArrClone[i])) {
-            pledgeArrClone[i] = Pledge.resolve(pledgeArrClone[i]);
-          }
-          pledgeArrClone[i].then(function(i) {
-            return function(value) {
-               if (state !== Pledge.REJECTED) {
-                 fulFilledArguments[i] = value;
-                 if (fulFilledArguments.length === l) {
-                   resolve(fulFilledArguments);
-                   state = Pledge.RESOLVED;
-                 }
-               }
-            };
-          }(i), function(value) {
-            reject(value);
-            state = Pledge.REJECTED;
-          });
-        }
+         var fulFilledArguments = [];
+         var state = Pledge.PENDING;
+         var pledgeArrClone = pledgeArr.slice();
+        
+         for (var i = 0, l = pledgeArrClone.length; i < l; i++) {
+            if (!Pledge.isPledge(pledgeArrClone[i])) {
+               pledgeArrClone[i] = Pledge.resolve(pledgeArrClone[i]);
+            }
+          
+            pledgeArrClone[i].then(function(i) {
+               return function(value) {
+                  if (state !== Pledge.REJECTED) {
+                     fulFilledArguments[i] = value;
+                     if (fulFilledArguments.length === l) {
+                        resolve(fulFilledArguments);
+                        state = Pledge.RESOLVED;
+                     }
+                  }
+               };
+            }(i), function(value) {
+               reject(value);
+               state = Pledge.REJECTED;
+            });
+         }
       });
+
       return pledge;
    };
 
@@ -226,26 +272,30 @@
     */
    Pledge.race = function(pledgeArr) {
       pledgeArr = [].concat(pledgeArr);
+      
       var pledgeArrClone = pledgeArr.slice();
       var pledge = new Pledge(function(resolve, reject) {
-        var state = Pledge.PENDING;
-        for (var i = 0, l = pledgeArrClone.length; i < l; i++) {
-          if (!Pledge.isPledge(pledgeArrClone[i])) {
-            pledgeArrClone[i] = Pledge.resolve(pledgeArrClone[i]);
-          }
-          pledgeArrClone[i].then(function(value) {
-            if (state === Pledge.PENDING) {
-               resolve(value);
-               state = Pledge.RESOLVED;
-            }
-          }, function(value) {
-            if (state === Pledge.PENDING) {
-               reject(value);
-               state = Pledge.REJECTED;
-            }
-          });
-        }
+         var state = Pledge.PENDING;
+        
+         for (var i = 0, l = pledgeArrClone.length; i < l; i++) {
+            if (!Pledge.isPledge(pledgeArrClone[i])) {
+               pledgeArrClone[i] = Pledge.resolve(pledgeArrClone[i]);
+             }
+          
+            pledgeArrClone[i].then(function(value) {
+               if (state === Pledge.PENDING) {
+                  resolve(value);
+                  state = Pledge.RESOLVED;
+               }
+            }, function(value) {
+               if (state === Pledge.PENDING) {
+                  reject(value);
+                  state = Pledge.REJECTED;
+               }
+            });
+         }
       });
+      
       return pledge;
    };
 
