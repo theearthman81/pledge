@@ -25,12 +25,12 @@
     * @param {Function} resolver
     */
    function Pledge(resolver) {
-      if(!this || !Pledge.isPledge(this)) {
+      if(!Pledge.isPledge(this)) {
          return new Pledge(resolver);
       }
       
       var boundResolve = bindScope(this._resolve, this),
-         boundReject = bindScope(this._resolve, this);
+         boundReject = bindScope(this._reject, this);
       
       this._state = Pledge.PENDING;
       this._purgeHandlers();
@@ -67,7 +67,7 @@
    Pledge.prototype._result = null;
 
    /**
-    * TODO.
+    * Proxies external Pledges returned as values in callbacks to the resolve/reject handlers.
     *
     * @param {Pledge} externalPledge
     */
@@ -76,7 +76,7 @@
    };
    
    /**
-    * TODO.
+    * Function that will be passed to the resolver method supplied by the user to allow them to resolve the Pledge.
     *
     * @param {Object} value
     */
@@ -105,7 +105,7 @@
    };
    
    /**
-    * TODO.
+    * Function that will be passed to the resolver method supplied by the user to allow them to reject the Pledge.
     *
     * @param {Object} value
     */
@@ -130,8 +130,7 @@
    };
 
    /**
-    * TODO - should this exist or should a new promise be returned each time instead of chaining 'this'.
-    *
+    * Clean handlers after Pledge has resolves/rejected.
     */
    Pledge.prototype._purgeHandlers = function() {
       this._onFulfilled = [];
@@ -166,14 +165,15 @@
    };
 
    /**
-    * TODO.
+    * Catch to get Pledge state.
     *
+    * @method catch
     * @param {Function} onRejected
     * @return {Pledge}
     */
    Pledge.prototype.catch = function(onRejected) {
       if (typeof onRejected === 'function') {
-         this.onRejected.push(onRejected);
+         this._onRejected.push(onRejected);
       }
 
       if (this._state === Pledge.REJECTED) {
@@ -184,8 +184,9 @@
    };
 
    /**
-    * TODO.
+    * Utility to get Pledge state.
     *
+    * @method getState
     * @return {String}
     */
    Pledge.prototype.getState = function() {
@@ -193,8 +194,9 @@
    };
 
    /**
-    * TODO.
+    * Utility to get Pledge result.
     *
+    * @method getResult
     * @return {Object}
     */
    Pledge.prototype.getResult = function() {
@@ -202,8 +204,9 @@
    };
 
    /**
-    * TODO.
+    * Static method that returns a resolved Pledge.
     *
+    * @method reject
     * @param {Object} value
     * @return {Pledge}
     */
@@ -214,8 +217,9 @@
    };
 
    /**
-    * TODO.
+    * Static method that returns a rejected Pledge.
     *
+    * @method reject
     * @param {Object} value
     * @return {Pledge}
     */
@@ -226,8 +230,11 @@
    };
 
    /**
-    * TODO.
+    * Static method that takes an Array of Pledges/Objects and returns a new Pledge that resolves only when
+    * all the pledges in the given Array have resolved. The resolve handler will recieve an Array of all results 
+    * in the same order as the original Pledge Array. If any fail returned Pledge will fail and pass the value of the failed Pledge.
     *
+    * @method all
     * @param {Pledge[]|Object[]} pledgeArr
     * @return {Pledge}
     */
@@ -265,8 +272,10 @@
    };
 
    /**
-    * TODO.
+    * Static method that takes an Array of Pledges/Objects and returns a new Pledge that resolves or rejects as soon as the first
+    * Pledge in the supplied Array resolves or rejects.
     *
+    * @method race
     * @param {Pledge[]|Object[]} pledgeArr
     * @return {Pledge}
     */
@@ -298,27 +307,32 @@
       
       return pledge;
    };
-
+   
    /**
-    * TODO.
+    * Static method for checking whether given argument is an instance of Pledge.
     *
+    * @method isPledge
     * @param {Pledge|Object} check
+    * @return {Boolean}
     */
    Pledge.isPledge = function(check) {
-      return check instanceof Pledge;
+      return check && check instanceof Pledge;
    };
 
    /**
+    * @static
     * @type {String}
     */
    Pledge.PENDING = 'pending';
 
    /**
+    * @static
     * @type {String}
     */
    Pledge.REJECTED = 'rejected';
 
    /**
+    * @static
     * @type {String}
     */
    Pledge.RESOLVED = 'resolved';
