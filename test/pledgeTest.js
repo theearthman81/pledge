@@ -12,6 +12,27 @@ describe('PledgeTest', function(){
        expect(spy).toHaveBeenCalledWith('foo');
    });
    
+   it('can resolve asynchronously and execute the correct handler', function(){ 
+      var spy = jasmine.createSpy();
+      var pledge;
+      runs(function() {
+         pledge = new Pledge(function(resolve, reject) {
+            setTimeout(function() {
+               resolve('foo');
+            }, 10);
+         });
+         pledge.then(spy);
+      });
+
+      waitsFor(function() {
+         return pledge.getState() === Pledge.RESOLVED;
+      }, 'Pledge should be resolved', 10);
+         
+      runs(function() {
+         expect(spy).toHaveBeenCalledWith('foo');
+      });
+   });
+   
    it('can reject immediately and execute the correct handler', function(){
        var spy = jasmine.createSpy();
        var pledge = new Pledge(function(resolve, reject) {
@@ -22,6 +43,27 @@ describe('PledgeTest', function(){
        expect(spy).toHaveBeenCalledWith('foo');
    });
    
+   it('can rejected asynchronously and execute the correct handler', function(){ 
+      var spy = jasmine.createSpy();
+      var pledge;
+      runs(function() {
+         pledge = new Pledge(function(resolve, reject) {
+            setTimeout(function() {
+               reject('foo');
+            }, 10);
+         });
+         pledge.then(null, spy);
+      });
+
+      waitsFor(function() {
+         return pledge.getState() === Pledge.REJECTED;
+      }, 'Pledge should be rejected', 10);
+         
+      runs(function() {
+         expect(spy).toHaveBeenCalledWith('foo');
+      });
+   });
+   
    it('can reject immediately and execute the correct handler via the catch method', function(){
        var spy = jasmine.createSpy();
        var pledge = new Pledge(function(resolve, reject) {
@@ -30,6 +72,27 @@ describe('PledgeTest', function(){
        
        pledge.catch(spy);
        expect(spy).toHaveBeenCalledWith('foo');
+   });
+   
+   it('can rejected asynchronously and execute the correct handler via the catch method', function(){ 
+      var spy = jasmine.createSpy();
+      var pledge;
+      runs(function() {
+         pledge = new Pledge(function(resolve, reject) {
+            setTimeout(function() {
+               reject('foo');
+            }, 10);
+         });
+         pledge.catch(spy);
+      });
+
+      waitsFor(function() {
+         return pledge.getState() === Pledge.REJECTED;
+      }, 'Pledge should be rejected', 10);
+         
+      runs(function() {
+         expect(spy).toHaveBeenCalledWith('foo');
+      });
    });
    
    it('can return correct state via getter', function(){
