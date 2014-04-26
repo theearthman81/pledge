@@ -74,7 +74,7 @@ describe('PledgeTest', function(){
        expect(spy).toHaveBeenCalledWith('foo');
    });
    
-   it('can rejected asynchronously and execute the correct handler via the catch method', function(){ 
+   it('can reject asynchronously and execute the correct handler via the catch method', function(){ 
       var spy = jasmine.createSpy();
       var pledge;
       runs(function() {
@@ -93,6 +93,50 @@ describe('PledgeTest', function(){
       runs(function() {
          expect(spy).toHaveBeenCalledWith('foo');
       });
+   });
+   
+   it('will run the reject handler when an error is thrown in the resolve handler passed into "then"', function(){ 
+      var spy = jasmine.createSpy();
+      var pledge = new Pledge(function(resolve, reject) {
+         resolve('foo');
+      });
+      pledge.then(function() {
+         throw new Error('bar');
+      }).catch(spy);
+         
+      expect(spy).toHaveBeenCalled();
+      expect(spy.argsForCall[0][0].message).toBe('bar');
+   });
+   
+   it('will allow chaining of the "then" methods to modify a value', function(){ 
+      var spy = jasmine.createSpy();
+      var pledge = new Pledge(function(resolve, reject) {
+         resolve(1);
+      });
+      pledge.then(function(value) {
+         return value + 1;
+      }).then(function(value) {
+         return value * 2;
+      }).then(spy);
+         
+      expect(spy).toHaveBeenCalled();
+      expect(spy).toHaveBeenCalledWith(4);
+   });
+   
+   it('will invoke a pledge and use its "then" method if one is returned from a handler o get its value', function(){ 
+      var spy = jasmine.createSpy();
+      var pledge = new Pledge(function(resolve, reject) {
+         resolve('foo');
+      });
+      var otherPledge = new Pledge(function(resolve, reject) {
+         resolve('bar');
+      });
+      pledge.then(function(value) {
+         return otherPledge;
+      }).then(spy);
+         
+      expect(spy).toHaveBeenCalled();
+      expect(spy).toHaveBeenCalledWith('bar');
    });
    
    it('can return correct state via getter', function(){
