@@ -88,13 +88,13 @@
          
          for (var i = 0, l = this._onFulfilled.length; i < l; i++) {
             chainedValue = this._onFulfilled[i](value);
-            if(typeof chainedValue !== 'undefined') {
-               this._result = value = chainedValue;
-            }
+            
             if (Pledge.isPledge(value)) {
                this._resolveExternalPledge(value);
                
                return this._onFulfilled = this._onFulfilled.slice(i);
+            } else if(typeof chainedValue !== 'undefined') {
+               this._result = value = chainedValue;
             }
          }
       } catch (err) {
@@ -116,13 +116,13 @@
       
       for (var i = 0, l = this._onRejected.length; i < l; i++) {
          chainedValue = this._onRejected[i](value);
-         if(typeof chainedValue !== 'undefined') {
-            this._result = value = chainedValue;
-         }
+
          if (Pledge.isPledge(value)) {
             this._resolveExternalPledge(value);
            
             return this._onRejected = this._onRejected.slice(i);
+         } else if(typeof chainedValue !== 'undefined') {
+            this._result = value = chainedValue;
          }
       }
       
