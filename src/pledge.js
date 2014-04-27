@@ -142,6 +142,7 @@
     * The handlers will be invoked if the appropriate function is run in the resolve mehod supplied in the pledge constructor.
     *
     * @method then
+    * @chainable
     * @param {Function} [onFulfilled]
     * @param {Function} [onRejected]
     * @return {Pledge}
@@ -170,6 +171,7 @@
     * Shortcut method to save passing null as first argument of "then". It will add a new rejection handler.
     *
     * @method catch
+    * @chainable
     * @param {Function} [onRejected]
     * @return {Pledge}
     */
