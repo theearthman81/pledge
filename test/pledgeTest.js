@@ -33,21 +33,6 @@ describe('PledgeTest', function(){
       });
    });
    
-   it('will invoke a pledge and use its "then" method if one is returned from a handler to get its value', function(){ 
-      var spy = jasmine.createSpy();
-      var pledge = new Pledge(function(resolve, reject) {
-         resolve('foo');
-      });
-      pledge.then(function(value) {
-         return new Pledge(function(resolve, reject) {
-            resolve('bar');
-         });
-      }).then(spy);
-         
-      expect(spy).toHaveBeenCalled();
-      expect(spy).toHaveBeenCalledWith('bar');
-   });
-   
    it('can reject immediately and execute the correct handler', function(){
        var spy = jasmine.createSpy();
        var pledge = new Pledge(function(resolve, reject) {
@@ -138,17 +123,152 @@ describe('PledgeTest', function(){
       expect(spy).toHaveBeenCalledWith(4);
    });
    
-   it('can return correct state via getter', function(){
-       var spy = jasmine.createSpy();
-       var pledgeResolve = new Pledge(function(resolve, reject) {
-          resolve('foo');
-       });
-       var pledgeReject = new Pledge(function(resolve, reject) {
-          reject('foo');
-       });
-        
-       expect(pledgeResolve.getState()).toBe(Pledge.RESOLVED);
-       expect(pledgeReject.getState()).toBe(Pledge.REJECTED);
+   it('will invoke a pledge and use its "then" method if one is returned from a handler to get its value', function(){ 
+      var spy = jasmine.createSpy();
+      var pledge = new Pledge(function(resolve, reject) {
+         resolve('foo');
+      });
+      pledge.then(function(value) {
+         return new Pledge(function(resolve, reject) {
+            resolve('bar');
+         });
+      }).then(spy);
+         
+      expect(spy).toHaveBeenCalled();
+      expect(spy).toHaveBeenCalledWith('bar');
+   });
+   
+   it('will invoke a pledge and use its "then" method if one is returned from a handler to get its value', function(){ 
+      var spy = jasmine.createSpy();
+      var pledge = new Pledge(function(resolve, reject) {
+         resolve('foo');
+      });
+      pledge.then(function(value) {
+         return new Pledge(function(resolve, reject) {
+            resolve('bar');
+         });
+      }).then(spy);
+         
+      expect(spy).toHaveBeenCalled();
+      expect(spy).toHaveBeenCalledWith('bar');
+   });
+   
+   it('will only resolve the pledge returned from "all" when all given pledges are resolved', function(){
+      var spy = jasmine.createSpy();
+      var pledge = new Pledge(function(resolve, reject) {
+         resolve('foo');
+      });
+      var otherPledge;
+      var pledgeAll;
+      runs(function() {
+         otherPledge = new Pledge(function(resolve, reject) {
+            setTimeout(function() {
+               resolve('bar');
+            }, 10);
+         });
+         pledgeAll = Pledge.all([pledge, otherPledge]);
+         pledgeAll.then(spy);
+         expect(pledgeAll.getState()).toBe(Pledge.PENDING);
+      });
+
+      waitsFor(function() {
+         return pledgeAll.getState() === Pledge.RESOLVED;
+      }, 'Pledge should be resolved', 10);
+
+      runs(function() {
+         expect(spy).toHaveBeenCalled();
+         expect(spy).toHaveBeenCalledWith(['foo', 'bar']);
+      });
+   });
+   
+   it('will be reject the pledge returned from "all" if any of the given pledges are rejected', function(){
+      var spy = jasmine.createSpy();
+      var pledge = new Pledge(function(resolve, reject) {
+         resolve('foo');
+      });
+      var otherPledge;
+      var pledgeAll;
+      runs(function() {
+         otherPledge = new Pledge(function(resolve, reject) {
+            setTimeout(function() {
+               reject('bar');
+            }, 10);
+         });
+         pledgeAll = Pledge.all([pledge, otherPledge]);
+         pledgeAll.then(null, spy);
+         expect(pledgeAll.getState()).toBe(Pledge.PENDING);
+      });
+
+      waitsFor(function() {
+         return pledgeAll.getState() === Pledge.REJECTED;
+      }, 'Pledge should be rejected', 10);
+
+      runs(function() {
+         expect(spy).toHaveBeenCalled();
+         expect(spy).toHaveBeenCalledWith('bar');
+      });
+   });
+   
+   it('will be resolve the pledge returned from "race" as soon the any of the supplied pledges resolve', function(){
+      var spy = jasmine.createSpy();
+      var pledge;
+      var otherPledge;
+      var pledgeRace;
+      runs(function() {
+         pledge = new Pledge(function(resolve, reject) {
+            setTimeout(function() {
+               resolve('foo');
+            }, 1000);
+         });
+         otherPledge = new Pledge(function(resolve, reject) {
+            setTimeout(function() {
+               resolve('bar');
+            }, 10);
+         });
+         pledgeRace = Pledge.race([pledge, otherPledge]);
+         pledgeRace.then(spy);
+         expect(pledgeRace.getState()).toBe(Pledge.PENDING);
+      });
+
+      waitsFor(function() {
+         return pledgeRace.getState() === Pledge.RESOLVED;
+      }, 'Pledge should be resolved', 10);
+
+      runs(function() {
+         expect(spy).toHaveBeenCalled();
+         expect(spy).toHaveBeenCalledWith('bar');
+      });
+   });
+   
+   it('will be reject the pledge returned from "race" as soon the any of the supplied pledges reject', function(){
+      var spy = jasmine.createSpy();
+      var pledge;
+      var otherPledge;
+      var pledgeRace;
+      runs(function() {
+         pledge = new Pledge(function(resolve, reject) {
+            setTimeout(function() {
+               resolve('foo');
+            }, 1000);
+         });
+         otherPledge = new Pledge(function(resolve, reject) {
+            setTimeout(function() {
+               reject('bar');
+            }, 10);
+         });
+         pledgeRace = Pledge.race([pledge, otherPledge]);
+         pledgeRace.then(null, spy);
+         expect(pledgeRace.getState()).toBe(Pledge.PENDING);
+      });
+
+      waitsFor(function() {
+         return pledgeRace.getState() === Pledge.REJECTED;
+      }, 'Pledge should be rejected', 10);
+
+      runs(function() {
+         expect(spy).toHaveBeenCalled();
+         expect(spy).toHaveBeenCalledWith('bar');
+      });
    });
    
    it('can return correct result via getter', function(){
