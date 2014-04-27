@@ -138,10 +138,11 @@
    };
 
    /**
-    * TODO.
+    * Method to allow pledge resolution to be handled; both arugments are optional, but the first will allow a success and the second a failure handler.
+    * The handlers will be invoked if the appropriate function is run in the resolve mehod supplied in the pledge constructor.
     *
-    * @param {Function} onFulfilled
-    * @param {Function} onRejected
+    * @param {Function} [onFulfilled]
+    * @param {Function} [onRejected]
     * @return {Pledge}
     */
    Pledge.prototype.then = function(onFulfilled, onRejected) {
@@ -165,10 +166,10 @@
    };
 
    /**
-    * Catch to get Pledge state.
+    * Shortcut method to save passing null as first argument of "then". It will add a new rejection handler.
     *
     * @method catch
-    * @param {Function} onRejected
+    * @param {Function} [onRejected]
     * @return {Pledge}
     */
    Pledge.prototype.catch = function(onRejected) {
