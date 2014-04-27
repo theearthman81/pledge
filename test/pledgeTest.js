@@ -285,15 +285,15 @@ describe('PledgeTest', function(){
    });
    
    it('can return a resolved Pledge via its static resolve method', function(){
-       var pledge = Pledge.resolve();
+      var pledge = Pledge.resolve();
        
-       expect(pledge.getState()).toBe(Pledge.RESOLVED);
+      expect(pledge.getState()).toBe(Pledge.RESOLVED);
    });
    
    it('can return a rejected Pledge via its static reject method', function(){
-       var pledge = Pledge.reject();
+      var pledge = Pledge.reject();
        
-       expect(pledge.getState()).toBe(Pledge.REJECTED);
+      expect(pledge.getState()).toBe(Pledge.REJECTED);
    });
    
    it('can check whther a supplied object is a Pledge instance or not', function(){

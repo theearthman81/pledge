@@ -141,6 +141,7 @@
     * Method to allow pledge resolution to be handled; both arugments are optional, but the first will allow a success and the second a failure handler.
     * The handlers will be invoked if the appropriate function is run in the resolve mehod supplied in the pledge constructor.
     *
+    * @method then
     * @param {Function} [onFulfilled]
     * @param {Function} [onRejected]
     * @return {Pledge}
@@ -208,6 +209,7 @@
     * Static method that returns a resolved Pledge.
     *
     * @method reject
+    * @static
     * @param {Object} value
     * @return {Pledge}
     */
@@ -221,6 +223,7 @@
     * Static method that returns a rejected Pledge.
     *
     * @method reject
+    * @static
     * @param {Object} value
     * @return {Pledge}
     */
@@ -236,6 +239,7 @@
     * in the same order as the original Pledge Array. If any fail returned Pledge will fail and pass the value of the failed Pledge.
     *
     * @method all
+    * @static
     * @param {Pledge[]|Object[]} pledgeArr
     * @return {Pledge}
     */
@@ -277,6 +281,7 @@
     * Pledge in the supplied Array resolves or rejects.
     *
     * @method race
+    * @static
     * @param {Pledge[]|Object[]} pledgeArr
     * @return {Pledge}
     */
@@ -313,6 +318,7 @@
     * Static method for checking whether given argument is an instance of Pledge.
     *
     * @method isPledge
+    * @static
     * @param {Pledge|Object} check
     * @return {Boolean}
     */
