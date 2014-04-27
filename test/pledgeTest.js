@@ -33,6 +33,21 @@ describe('PledgeTest', function(){
       });
    });
    
+   it('will invoke a pledge and use its "then" method if one is returned from a handler to get its value', function(){ 
+      var spy = jasmine.createSpy();
+      var pledge = new Pledge(function(resolve, reject) {
+         resolve('foo');
+      });
+      pledge.then(function(value) {
+         return new Pledge(function(resolve, reject) {
+            resolve('bar');
+         });
+      }).then(spy);
+         
+      expect(spy).toHaveBeenCalled();
+      expect(spy).toHaveBeenCalledWith('bar');
+   });
+   
    it('can reject immediately and execute the correct handler', function(){
        var spy = jasmine.createSpy();
        var pledge = new Pledge(function(resolve, reject) {
